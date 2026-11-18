@@ -24,5 +24,6 @@ metrics={'success_rate':round(score,4),
          'fall_rate':round(max(0.0,0.24-0.14*params['curriculum_difficulty']),4),
          'energy':round(1.1+0.1*(params['reward_tracking']-1)**2,4),
          'worst_seed_success':round(min(values),4)}
-(a.run_dir/'eval.json').write_text(json.dumps({'evaluation_seeds':seeds,'metrics':metrics},indent=2)+'\n')
+(a.run_dir/'eval.json').write_text(json.dumps({'evaluation_seeds':seeds,'metrics':metrics,
+    'diagnostics':{'success_by_eval_seed':{str(s):round(v,4) for s,v in zip(seeds,values)}}},indent=2)+'\n')
 print('Synthetic held-out evaluation:', metrics)

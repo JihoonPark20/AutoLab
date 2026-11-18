@@ -15,7 +15,7 @@ An unattended experiment loop for reinforcement-learning research. Any simulator
 
 ```bash
 git clone https://github.com/JihoonPark20/AutoLab.git && cd AutoLab
-python3 -m unittest discover -s tests          # 15 tests, no RL deps
+python3 -m unittest discover -s tests          # 18 tests, no RL deps
 python3 rl_autolab.py run --config configs/external_project_demo.json \
   --state-dir runs/demo --cycles 3              # synthetic toy project
 python3 rl_autolab.py status --state-dir runs/demo
@@ -28,8 +28,11 @@ The demo uses a synthetic project and the `rules` backend. It checks the wiring 
 1. **Train command.** Reads `{params_json}` and `{seed}`, trains, then writes one line to `{run_dir}/checkpoint_path.txt` holding the checkpoint path.
 2. **Eval command.** Loads `{checkpoint}`, runs your fixed protocol on `{fixed_seeds}`, then writes `{run_dir}/eval.json`:
    ```json
-   {"evaluation_seeds": [201, 202, 203], "metrics": {"success_rate": 0.83, "fall_rate": 0.09}}
+   {"evaluation_seeds": [201, 202, 203],
+    "metrics": {"success_rate": 0.83, "fall_rate": 0.09},
+    "diagnostics": {"falls_by_cause": {"slip": 7, "torque_limit": 2}}}
    ```
+   `diagnostics` is optional free-form JSON, for example failure causes or per-seed breakdowns. The proposal agent sees it, together with a min/max/first/last summary of `{run_dir}/train_metrics.jsonl` (one JSON object per line) if your trainer writes one. Richer diagnostics lead to better proposals.
 3. **Config.** Copy `configs/external_project_demo.json` and set `project.root`, `project.python`, the `train`/`eval` command arrays, `parameters` (`value`/`min`/`max`/`max_delta`), `decision` (primary metric, guardrails, target) and `limits`.
 
 Commands are argument arrays, never run through a shell. Available tokens: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {project_root} {autolab_root}`, plus any key in `project.variables`. A reference adapter is in `examples/toy_project/`. Isaac Lab template: `docs/ISAAC_LAB.md`.
@@ -51,6 +54,8 @@ python3 rl_autolab.py doctor --config configs/my_project.json   # preflight, no 
 caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
   --state-dir runs/exp01 --cycles 40 --wait-budget 1800
 ```
+
+Set `"notify": {"command": ["curl", "-d", "{message}", "https://ntfy.sh/<topic>"]}` to get a message whenever the loop stops or pauses. Any argv command works.
 
 `--wait-budget N` sleeps and retries when the local call cap or a Claude usage limit is hit, instead of exiting. Other commands: `stop`, `resume`, `status`, `approve-review --note ...`. Running `run` again continues from saved state; `--cycles` is the total target.
 

@@ -15,7 +15,7 @@
 
 ```bash
 git clone https://github.com/JihoonPark20/AutoLab.git && cd AutoLab
-python3 -m unittest discover -s tests          # 테스트 15개, RL 의존성 없음
+python3 -m unittest discover -s tests          # 테스트 18개, RL 의존성 없음
 python3 rl_autolab.py run --config configs/external_project_demo.json \
   --state-dir runs/demo --cycles 3              # 합성 토이 프로젝트
 python3 rl_autolab.py status --state-dir runs/demo
@@ -28,8 +28,11 @@ python3 rl_autolab.py status --state-dir runs/demo
 1. **학습 명령.** `{params_json}`과 `{seed}`를 읽어 학습한 뒤, 체크포인트 경로 한 줄을 `{run_dir}/checkpoint_path.txt`에 씁니다.
 2. **평가 명령.** `{checkpoint}`를 불러와 `{fixed_seeds}`로 고정된 프로토콜을 실행한 뒤 `{run_dir}/eval.json`을 씁니다:
    ```json
-   {"evaluation_seeds": [201, 202, 203], "metrics": {"success_rate": 0.83, "fall_rate": 0.09}}
+   {"evaluation_seeds": [201, 202, 203],
+    "metrics": {"success_rate": 0.83, "fall_rate": 0.09},
+    "diagnostics": {"falls_by_cause": {"slip": 7, "torque_limit": 2}}}
    ```
+   `diagnostics`는 자유 형식의 선택 항목입니다(예: 실패 원인, 시드별 분석). 제안 에이전트가 이 내용을 봅니다. 학습기가 `{run_dir}/train_metrics.jsonl`(한 줄에 JSON 객체 하나)을 쓰면 그 학습 곡선의 min/max/first/last 요약도 함께 받습니다. 진단 정보가 풍부할수록 제안의 질이 좋아집니다.
 3. **설정.** `configs/external_project_demo.json`을 복사한 뒤 `project.root`, `project.python`, `train`/`eval` 명령 배열, `parameters`(`value`/`min`/`max`/`max_delta`), `decision`(주 지표, 가드레일, 목표), `limits`를 채웁니다.
 
 명령은 인자 배열이며 셸을 거치지 않습니다. 사용할 수 있는 토큰: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {project_root} {autolab_root}`, 그리고 `project.variables`의 키. 참고 어댑터는 `examples/toy_project/`에 있습니다. Isaac Lab 템플릿: `docs/ISAAC_LAB.md`.
@@ -51,6 +54,8 @@ python3 rl_autolab.py doctor --config configs/my_project.json   # 사전 점검,
 caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
   --state-dir runs/exp01 --cycles 40 --wait-budget 1800
 ```
+
+`"notify": {"command": ["curl", "-d", "{message}", "https://ntfy.sh/<topic>"]}`를 설정하면 루프가 멈추거나 일시정지할 때마다 알림을 받습니다. 어떤 argv 명령이든 쓸 수 있습니다.
 
 `--wait-budget N`을 주면 로컬 호출 한도나 Claude 사용 한도에 걸려도 종료하지 않고, N초 쉬었다가 다시 시도합니다. 그 밖의 명령: `stop`, `resume`, `status`, `approve-review --note ...`. `run`을 다시 실행하면 저장된 상태에서 이어갑니다. `--cycles`는 누적 목표입니다.
 

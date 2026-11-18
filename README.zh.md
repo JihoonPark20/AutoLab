@@ -15,7 +15,7 @@
 
 ```bash
 git clone https://github.com/JihoonPark20/AutoLab.git && cd AutoLab
-python3 -m unittest discover -s tests          # 15 个测试，无 RL 依赖
+python3 -m unittest discover -s tests          # 18 个测试，无 RL 依赖
 python3 rl_autolab.py run --config configs/external_project_demo.json \
   --state-dir runs/demo --cycles 3              # 合成示例项目
 python3 rl_autolab.py status --state-dir runs/demo
@@ -28,8 +28,11 @@ python3 rl_autolab.py status --state-dir runs/demo
 1. **训练命令。** 读取 `{params_json}` 和 `{seed}` 进行训练，然后把检查点路径写成一行，存入 `{run_dir}/checkpoint_path.txt`。
 2. **评估命令。** 加载 `{checkpoint}`，在 `{fixed_seeds}` 上运行固定协议，然后写出 `{run_dir}/eval.json`：
    ```json
-   {"evaluation_seeds": [201, 202, 203], "metrics": {"success_rate": 0.83, "fall_rate": 0.09}}
+   {"evaluation_seeds": [201, 202, 203],
+    "metrics": {"success_rate": 0.83, "fall_rate": 0.09},
+    "diagnostics": {"falls_by_cause": {"slip": 7, "torque_limit": 2}}}
    ```
+   `diagnostics` 是可选的自由格式 JSON（例如失败原因、按种子的细分）。提案智能体会看到它。如果训练器写出 `{run_dir}/train_metrics.jsonl`（每行一个 JSON 对象），智能体还会收到该训练曲线的 min/max/first/last 摘要。诊断信息越丰富，提案质量越好。
 3. **配置。** 复制 `configs/external_project_demo.json`，填写 `project.root`、`project.python`、`train`/`eval` 命令数组、`parameters`（`value`/`min`/`max`/`max_delta`）、`decision`（主指标、护栏、目标）以及 `limits`。
 
 命令是参数数组，从不经过 shell 执行。可用占位符：`{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {project_root} {autolab_root}`，以及 `project.variables` 中的键。参考适配器见 `examples/toy_project/`。Isaac Lab 模板：`docs/ISAAC_LAB.md`。
@@ -51,6 +54,8 @@ python3 rl_autolab.py doctor --config configs/my_project.json   # 预检，不�
 caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
   --state-dir runs/exp01 --cycles 40 --wait-budget 1800
 ```
+
+设置 `"notify": {"command": ["curl", "-d", "{message}", "https://ntfy.sh/<topic>"]}` 后，每当循环停止或暂停都会收到通知。任何 argv 命令都可以。
 
 使用 `--wait-budget N` 时，如果触及本地调用上限或 Claude 使用额度，程序不会退出，而是等待 N 秒后重试。其他命令：`stop`、`resume`、`status`、`approve-review --note ...`。再次执行 `run` 会从已保存的状态继续；`--cycles` 是累计目标。
 
