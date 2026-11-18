@@ -1,0 +1,9 @@
+# Universal AutoLab automation rules
+
+1. This directory is an **external experiment manager**, not the research project. Never copy it into the research repository or modify its Git history as part of normal parameter experiments.
+2. A research repository is selected by the `project.root` field of a config file. The manager uses `project.python` or the activated environment and executes configurable train/eval command arrays (without shell=True).
+3. Respect the project's fixed evaluation seed grid, metrics, guardrails, allowed parameter bounds and max change per step. Never alter these while a run is active.
+4. To propose the next experiment, read `runs/<name>/proposal_request.md`, then write **only** `runs/<name>/proposal.json` with `{"hypothesis":"...", "updates":{"allowed_key":value}, "expected_effect":"..."}`. Do not modify original source code or AutoLab itself when making parameter proposals.
+5. Ask for separate research-repo copy + human review before modifying observations, reward code, termination logic or dynamics. Do not change evaluator or promote your own patch without checks.
+6. Synthetic demo output is never evidence of actual RL performance. Project adapters need a real test on target hardware; Isaac Lab requires a project-specific rollout evaluator.
+7. No automatic API billing; Claude CLI calls are explicit and budgeted by invocation counts, not provider tokens. Do not attempt to work around provider limits.

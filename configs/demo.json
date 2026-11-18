@@ -1,0 +1,98 @@
+{
+  "name": "demo_cpu_only",
+  "research_goal": "Improve held-out locomotion task success with curriculum difficulty and tracking reward",
+  "backend": "rules",
+  "training_mode": "cold_start",
+  "claude_model": "sonnet",
+  "agent_timeout_seconds": 240,
+  "max_cycles": 7,
+  "max_changed_parameters": 2,
+  "poll_seconds": 0.15,
+  "training_seed_base": 40,
+  "parameters": {
+    "curriculum_difficulty": {
+      "value": 0.25,
+      "min": 0,
+      "max": 1,
+      "max_delta": 0.15
+    },
+    "reward_tracking": {
+      "value": 1,
+      "min": 0.5,
+      "max": 2.0,
+      "max_delta": 0.2
+    }
+  },
+  "train": {
+    "command": [
+      "{python}",
+      "-m",
+      "demo.mock_train",
+      "--run-dir",
+      "{run_dir}",
+      "--params-json",
+      "{params_json}",
+      "--seed",
+      "{seed}",
+      "--resume-checkpoint",
+      "{resume_checkpoint}"
+    ],
+    "timeout_seconds": 120,
+    "early_stop": {
+      "enabled": false,
+      "metric": "train_success",
+      "patience_points": 8,
+      "min_points": 16,
+      "min_delta": 0.002
+    }
+  },
+  "eval": {
+    "command": [
+      "{python}",
+      "-m",
+      "demo.mock_eval",
+      "--run-dir",
+      "{run_dir}",
+      "--params-json",
+      "{params_json}",
+      "--checkpoint",
+      "{checkpoint}",
+      "--fixed-seeds",
+      "{fixed_seeds}"
+    ],
+    "timeout_seconds": 60,
+    "fixed_seeds": [
+      201,
+      202,
+      203,
+      204,
+      205
+    ]
+  },
+  "decision": {
+    "primary_metric": "success_rate",
+    "maximize": true,
+    "target_score": 0.75,
+    "min_improvement": 0.004,
+    "guardrails": {
+      "fall_rate": {
+        "max": 0.3
+      },
+      "energy": {
+        "max": 1.5
+      }
+    }
+  },
+  "limits": {
+    "max_calls_24h": 2,
+    "max_calls_7d": 5,
+    "min_seconds_between_calls": 0,
+    "max_consecutive_failures": 2
+  },
+  "project": {
+    "root": "@autolab",
+    "python": "auto",
+    "enforce_external_runs": false,
+    "git_guard": false
+  }
+}

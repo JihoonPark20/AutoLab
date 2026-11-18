@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+  <style>
+    .bg{fill:#ffffff}.box{fill:#f6f8fa;stroke:#d0d7de}.core{fill:#eef4ff;stroke:#4f7cff}
+    .t{fill:#1f2328}.m{fill:#59636e}.ln{stroke:#59636e;fill:none}.ah{fill:#59636e}
+    .train{fill:#4f7cff;opacity:.85}.ai{fill:#f08c2e}.win{stroke:#8c959f;fill:none;stroke-dasharray:4 4}
+    @media (prefers-color-scheme:dark){
+      .bg{fill:#0d1117}.box{fill:#161b22;stroke:#30363d}.core{fill:#14213d;stroke:#6d93ff}
+      .t{fill:#e6edf3}.m{fill:#9198a1}.ln{stroke:#9198a1}.ah{fill:#9198a1}.win{stroke:#6e7681}
+    }
+  </style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+  <rect class="bg" width="960" height="440" rx="12"/>
+  <text class="t" x="40" y="48" font-size="26" font-weight="700">AutoLab</text>
+  <text class="m" x="160" y="48" font-size="15">An RL research loop that spends AI calls per decision, not per hour of training</text>
+
+  <rect class="box" x="40" y="82" width="250" height="150" rx="10"/>
+  <text class="t" x="60" y="112" font-size="16" font-weight="600">Your RL project</text>
+  <text class="m" x="60" y="140" font-size="13">train adapter → checkpoint</text>
+  <text class="m" x="60" y="162" font-size="13">eval adapter → eval.json</text>
+  <text class="m" x="60" y="184" font-size="13">fixed held-out seeds</text>
+  <text class="m" x="60" y="214" font-size="12">MuJoCo · Isaac Lab · SB3 · any</text>
+
+  <rect class="core" x="355" y="82" width="250" height="150" rx="10" stroke-width="1.5"/>
+  <text class="t" x="375" y="112" font-size="16" font-weight="600">AutoLab manager</text>
+  <text class="m" x="375" y="140" font-size="13">durable state + locks</text>
+  <text class="m" x="375" y="162" font-size="13">metric + guardrails decide</text>
+  <text class="m" x="375" y="184" font-size="13">accept / reject vs champion</text>
+  <text class="m" x="375" y="214" font-size="12">stdlib Python · macOS · Linux</text>
+
+  <rect class="box" x="670" y="82" width="250" height="150" rx="10"/>
+  <text class="t" x="690" y="112" font-size="16" font-weight="600">Proposal agent</text>
+  <text class="m" x="690" y="140" font-size="13">claude -p, 1 turn, plan mode</text>
+  <text class="m" x="690" y="162" font-size="13">bounded JSON updates only</text>
+  <text class="m" x="690" y="184" font-size="13">allowlist · range · max step</text>
+  <text class="m" x="690" y="214" font-size="12">or manual / rules backend</text>
+
+  <path class="ln" d="M355 128H292" marker-end="url(#a)"/><text class="m" x="300" y="120" font-size="11">params</text>
+  <path class="ln" d="M290 190H353" marker-end="url(#a)"/><text class="m" x="298" y="206" font-size="11">metrics</text>
+  <path class="ln" d="M605 128H668" marker-end="url(#a)"/><text class="m" x="612" y="120" font-size="11">history</text>
+  <path class="ln" d="M670 190H607" marker-end="url(#a)"/><text class="m" x="612" y="206" font-size="11">proposal</text>
+
+  <text class="t" x="40" y="286" font-size="14" font-weight="600">One day, unattended</text>
+  <g transform="translate(40,302)">
+    <rect class="train" x="0" y="0" width="190" height="28" rx="4"/><rect class="ai" x="192" y="0" width="8" height="28" rx="2"/>
+    <rect class="train" x="202" y="0" width="190" height="28" rx="4"/><rect class="ai" x="394" y="0" width="8" height="28" rx="2"/>
+    <rect class="train" x="404" y="0" width="190" height="28" rx="4"/><rect class="ai" x="596" y="0" width="8" height="28" rx="2"/>
+    <rect class="train" x="606" y="0" width="190" height="28" rx="4"/><rect class="ai" x="798" y="0" width="8" height="28" rx="2"/>
+    <rect class="win" x="0" y="-6" width="290" height="40" rx="6"/><text class="m" x="6" y="52" font-size="12">5-hour usage window</text>
+    <rect class="train" x="0" y="74" width="14" height="12" rx="2"/><text class="m" x="20" y="85" font-size="12">train + fixed-seed eval (no AI calls)</text>
+    <rect class="ai" x="270" y="74" width="14" height="12" rx="2"/><text class="m" x="290" y="85" font-size="12">one proposal call, capped by max_calls_24h / 7d</text>
+    <text class="m" x="620" y="85" font-size="12">budget hit → wait, then resume</text>
+  </g>
+</svg>
