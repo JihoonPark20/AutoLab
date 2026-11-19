@@ -1,0 +1,7 @@
+{
+  "hypothesis": "Remaining failures wander; a small step cost should favour shorter paths",
+  "updates": {
+    "w_step": -0.05
+  },
+  "expected_effect": "higher success_rate and fewer steps to goal"
+}

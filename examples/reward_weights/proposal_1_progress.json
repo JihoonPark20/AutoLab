@@ -1,0 +1,7 @@
+{
+  "hypothesis": "r_progress is zero and success stays low: the goal bonus alone is too sparse for 120 episodes",
+  "updates": {
+    "w_progress": 0.05
+  },
+  "expected_effect": "success_rate well above 0.5"
+}

@@ -1,0 +1,90 @@
+{
+  "name": "reward_weights",
+  "research_goal": "Tune the weights of a fixed reward (goal, progress, step cost) so a tabular Q-learner reaches the goal from random starts within 120 episodes",
+  "backend": "manual",
+  "claude_model": "sonnet",
+  "agent_timeout_seconds": 240,
+  "max_cycles": 6,
+  "max_changed_parameters": 1,
+  "poll_seconds": 0.1,
+  "train_seeds": [
+    40,
+    41
+  ],
+  "parameters": {
+    "w_goal": {
+      "value": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "max_delta": 0.5
+    },
+    "w_progress": {
+      "value": 0.0,
+      "min": 0.0,
+      "max": 0.5,
+      "max_delta": 0.1
+    },
+    "w_step": {
+      "value": 0.0,
+      "min": -0.1,
+      "max": 0.0,
+      "max_delta": 0.05
+    }
+  },
+  "train": {
+    "command": [
+      "{python}",
+      "train.py",
+      "--run-dir",
+      "{run_dir}",
+      "--params-json",
+      "{params_json}",
+      "--seed",
+      "{seed}",
+      "--episodes",
+      "{episodes}"
+    ],
+    "timeout_seconds": 120
+  },
+  "eval": {
+    "command": [
+      "{python}",
+      "evaluate.py",
+      "--run-dir",
+      "{run_dir}",
+      "--checkpoint",
+      "{checkpoint}",
+      "--fixed-seeds",
+      "{fixed_seeds}"
+    ],
+    "timeout_seconds": 60,
+    "fixed_seeds": [
+      501,
+      502,
+      503
+    ]
+  },
+  "decision": {
+    "primary_metric": "success_rate",
+    "maximize": true,
+    "target_score": 0.98,
+    "min_improvement": 0.01,
+    "guardrails": {}
+  },
+  "limits": {
+    "max_calls_24h": 6,
+    "max_calls_7d": 20,
+    "min_seconds_between_calls": 0,
+    "max_consecutive_failures": 2,
+    "max_consecutive_rejections": 3
+  },
+  "project": {
+    "root": "../examples/reward_weights",
+    "python": "auto",
+    "enforce_external_runs": true,
+    "git_guard": false,
+    "variables": {
+      "episodes": 120
+    }
+  }
+}
