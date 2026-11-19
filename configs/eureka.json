@@ -1,0 +1,93 @@
+{
+  "name": "eureka",
+  "research_goal": "Design a training reward so a tabular Q-learner reaches the goal from random starts within a small episode budget",
+  "backend": "manual",
+  "claude_model": "sonnet",
+  "agent_timeout_seconds": 300,
+  "max_cycles": 6,
+  "max_changed_parameters": 1,
+  "poll_seconds": 0.1,
+  "train_seeds": [
+    40,
+    41
+  ],
+  "parameters": {
+    "learning_rate": {
+      "value": 0.5,
+      "min": 0.05,
+      "max": 1.0,
+      "max_delta": 0.2
+    }
+  },
+  "train": {
+    "command": [
+      "{python}",
+      "train.py",
+      "--run-dir",
+      "{run_dir}",
+      "--params-json",
+      "{params_json}",
+      "--code-file",
+      "{code_file}",
+      "--seed",
+      "{seed}",
+      "--episodes",
+      "{episodes}"
+    ],
+    "timeout_seconds": 120
+  },
+  "eval": {
+    "command": [
+      "{python}",
+      "evaluate.py",
+      "--run-dir",
+      "{run_dir}",
+      "--checkpoint",
+      "{checkpoint}",
+      "--fixed-seeds",
+      "{fixed_seeds}"
+    ],
+    "timeout_seconds": 60,
+    "fixed_seeds": [
+      501,
+      502,
+      503
+    ]
+  },
+  "decision": {
+    "primary_metric": "success_rate",
+    "maximize": true,
+    "target_score": 0.9,
+    "min_improvement": 0.02,
+    "guardrails": {}
+  },
+  "limits": {
+    "max_calls_24h": 6,
+    "max_calls_7d": 20,
+    "min_seconds_between_calls": 0,
+    "max_consecutive_failures": 2,
+    "max_consecutive_rejections": 3
+  },
+  "project": {
+    "root": "../examples/eureka",
+    "python": "auto",
+    "enforce_external_runs": true,
+    "git_guard": false,
+    "variables": {
+      "episodes": 120
+    }
+  },
+  "code": {
+    "initial": "../examples/eureka/reward_sparse.py",
+    "function": "compute_reward",
+    "interface": "compute_reward(obs) -> (float, dict[str, float]). obs keys: pos, next_pos, goal (x, y tuples), size (int), reached (bool), step (int). Each components entry is logged per episode as r_<name>.",
+    "allowed_imports": [
+      "math"
+    ],
+    "max_bytes": 8000,
+    "context_files": [
+      "env.py"
+    ],
+    "role": "training reward"
+  }
+}

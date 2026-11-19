@@ -1,0 +1,6 @@
+{
+  "hypothesis": "Sparse goal reward gives almost no learning signal in 120 episodes; a potential-style progress term should propagate value from the goal",
+  "updates": {},
+  "expected_effect": "success_rate rises from ~0.3 to above 0.9",
+  "code": "def compute_reward(obs):\n    \"\"\"Dense progress term plus goal bonus and a small step cost.\"\"\"\n    gx, gy = obs[\"goal\"]\n    before = abs(gx - obs[\"pos\"][0]) + abs(gy - obs[\"pos\"][1])\n    after = abs(gx - obs[\"next_pos\"][0]) + abs(gy - obs[\"next_pos\"][1])\n    parts = {\"progress\": 0.1 * (before - after), \"goal\": 1.0 if obs[\"reached\"] else 0.0, \"step\": -0.01}\n    return sum(parts.values()), parts\n"
+}
