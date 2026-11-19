@@ -6,7 +6,9 @@ A real (tiny) RL task: tabular Q-learning must reach a goal on a 15×15 grid fro
 - `proposal_shaped.json`: an example proposal carrying `code`, the format the `claude` backend returns.
 - `train_metrics.jsonl`: per-episode sums of each reward component (`r_<name>`). This is the reward reflection the planner sees.
 
-Paper: *Eureka: Human-Level Reward Design via Coding Large Language Models* (Ma et al., ICLR 2024, [arXiv:2310.12931](https://arxiv.org/abs/2310.12931)).
+Paper: *Eureka: Human-Level Reward Design via Coding Large Language Models* (Ma et al., ICLR 2024, [arXiv:2310.12931](https://arxiv.org/abs/2310.12931)). Project page: https://eureka-research.github.io/
+
+This is a toy re-implementation of the method's loop for AutoLab, not a port of the official code.
 
 ```bash
 python3 rl_autolab.py run --config configs/eureka.json --state-dir runs/eureka   # sparse reward: success ≈ 0.27
