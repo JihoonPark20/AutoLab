@@ -6,9 +6,10 @@
 
 An unattended experiment loop for reinforcement-learning research. Any simulator and any OS that runs Python. Training takes hours, but deciding what to try next takes seconds. AutoLab runs train → fixed-seed eval → accept/reject → propose. The AI is called **once per finished experiment**, never while training runs. A Claude Code subscription's 5-hour and weekly limits can then cover a loop that runs for days.
 
+- **Runs on your Claude Code subscription.** Proposals come from your own `claude` login: no API key, no per-token bill. The Eureka papers call a paid LLM API for every sample.
 - **Simulator-agnostic.** Your project only has to provide two commands that write `checkpoint_path.txt` and `eval.json`.
 - **Zero dependencies.** One stdlib Python file (3.10+), macOS and Linux.
-- **Bounded agent.** Proposals may only change allowlisted numeric parameters, within declared ranges and step sizes. The evaluator, seeds and metrics are frozen for the whole run.
+- **Bounded agent.** Proposals may only change allowlisted parameters within declared ranges and step sizes, plus an opt-in code slot. The evaluator, seeds and metrics are frozen for the whole run.
 - **Crash-safe.** Durable state, a lock per run directory and detached workers. Restarting never launches a duplicate GPU job.
 
 ## Quickstart
