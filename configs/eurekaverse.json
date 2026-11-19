@@ -1,0 +1,94 @@
+{
+  "name": "eurekaverse",
+  "research_goal": "Write a training-level generator (an environment curriculum) so a policy with only local observations succeeds on unseen obstacle levels",
+  "backend": "manual",
+  "claude_model": "sonnet",
+  "agent_timeout_seconds": 300,
+  "max_cycles": 6,
+  "max_changed_parameters": 1,
+  "poll_seconds": 0.1,
+  "train_seeds": [
+    40,
+    41
+  ],
+  "parameters": {
+    "learning_rate": {
+      "value": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "max_delta": 0.2
+    }
+  },
+  "code": {
+    "initial": "../examples/eurekaverse/levels_v0.py",
+    "role": "training level generator (environment curriculum)",
+    "function": "generate_level",
+    "interface": "generate_level(rng, difficulty) -> {'walls': [[x, y], ...], 'start': [x, y], 'goal': [x, y]} on a 10x10 grid. rng is a random.Random; difficulty goes 0.0 -> 1.0 over training. Invalid cells are dropped; start and goal must differ.",
+    "allowed_imports": [
+      "math"
+    ],
+    "max_bytes": 8000,
+    "context_files": [
+      "env.py",
+      "train.py"
+    ]
+  },
+  "train": {
+    "command": [
+      "{python}",
+      "train.py",
+      "--run-dir",
+      "{run_dir}",
+      "--params-json",
+      "{params_json}",
+      "--code-file",
+      "{code_file}",
+      "--seed",
+      "{seed}",
+      "--episodes",
+      "{episodes}"
+    ],
+    "timeout_seconds": 120
+  },
+  "eval": {
+    "command": [
+      "{python}",
+      "evaluate.py",
+      "--run-dir",
+      "{run_dir}",
+      "--checkpoint",
+      "{checkpoint}",
+      "--fixed-seeds",
+      "{fixed_seeds}"
+    ],
+    "timeout_seconds": 60,
+    "fixed_seeds": [
+      501,
+      502,
+      503
+    ]
+  },
+  "decision": {
+    "primary_metric": "success_rate",
+    "maximize": true,
+    "target_score": 0.5,
+    "min_improvement": 0.02,
+    "guardrails": {}
+  },
+  "limits": {
+    "max_calls_24h": 6,
+    "max_calls_7d": 20,
+    "min_seconds_between_calls": 0,
+    "max_consecutive_failures": 2,
+    "max_consecutive_rejections": 3
+  },
+  "project": {
+    "root": "../examples/eurekaverse",
+    "python": "auto",
+    "enforce_external_runs": true,
+    "git_guard": false,
+    "variables": {
+      "episodes": 1500
+    }
+  }
+}

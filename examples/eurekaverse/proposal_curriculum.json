@@ -1,0 +1,6 @@
+{
+  "hypothesis": "Training levels are empty, so observations with a blocked neighbour never occur and the policy has no wall-avoidance behaviour. A curriculum that ramps obstacle density and start-goal distance with difficulty should cover those observations",
+  "updates": {},
+  "code": "def generate_level(rng, difficulty):\n    \"\"\"Curriculum: obstacle density ramps from 0 to 30% and start-goal distance grows with difficulty.\"\"\"\n    size = 10\n    cells = [(x, y) for x in range(size) for y in range(size)]\n    min_dist = 2 + int(6 * difficulty)\n    while True:\n        start, goal = rng.sample(cells, 2)\n        if abs(start[0] - goal[0]) + abs(start[1] - goal[1]) >= min_dist:\n            break\n    density = 0.3 * difficulty\n    walls = [list(c) for c in cells if c not in (start, goal) and rng.random() < density]\n    return {\"walls\": walls, \"start\": list(start), \"goal\": list(goal)}\n",
+  "expected_effect": "held-out success_rate rises from ~0.34 to above 0.5"
+}
