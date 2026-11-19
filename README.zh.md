@@ -36,7 +36,7 @@ python3 rl_autolab.py status --state-dir runs/demo
    `diagnostics` 是可选的自由格式 JSON（例如失败原因、按种子的细分）。提案智能体会看到它。如果训练器写出 `{run_dir}/train_metrics.jsonl`（每行一个 JSON 对象），智能体还会收到该训练曲线的 min/max/first/last 摘要。诊断信息越丰富，提案质量越好。
 3. **配置。** 复制 `configs/external_project_demo.json`，填写 `project.root`、`project.python`、`train`/`eval` 命令数组、`parameters`（`value`/`min`/`max`/`max_delta`）、`decision`（主指标、护栏、目标）以及 `limits`。
 
-命令是参数数组，从不经过 shell 执行。可用占位符：`{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`，以及 `project.variables` 中的键。参考适配器见 `examples/toy_project/`。Isaac Lab 适配器模板位于 [`example/isaaclab`](https://github.com/JihoonPark20/AutoLab/tree/example/isaaclab) 分支。
+命令是参数数组，从不经过 shell 执行。可用占位符：`{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`，以及 `project.variables` 中的键。参考适配器见 `examples/toy_project/`。
 
 ```bash
 python3 rl_autolab.py doctor --config configs/my_project.json   # 预检，不训练

@@ -36,7 +36,7 @@ python3 rl_autolab.py status --state-dir runs/demo
    `diagnostics`는 자유 형식의 선택 항목입니다(예: 실패 원인, 시드별 분석). 제안 에이전트가 이 내용을 봅니다. 학습기가 `{run_dir}/train_metrics.jsonl`(한 줄에 JSON 객체 하나)을 쓰면 그 학습 곡선의 min/max/first/last 요약도 함께 받습니다. 진단 정보가 풍부할수록 제안의 질이 좋아집니다.
 3. **설정.** `configs/external_project_demo.json`을 복사한 뒤 `project.root`, `project.python`, `train`/`eval` 명령 배열, `parameters`(`value`/`min`/`max`/`max_delta`), `decision`(주 지표, 가드레일, 목표), `limits`를 채웁니다.
 
-명령은 인자 배열이며 셸을 거치지 않습니다. 사용할 수 있는 토큰: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`, 그리고 `project.variables`의 키. 참고 어댑터는 `examples/toy_project/`에 있습니다. Isaac Lab 어댑터 템플릿은 [`example/isaaclab`](https://github.com/JihoonPark20/AutoLab/tree/example/isaaclab) 브랜치에 있습니다.
+명령은 인자 배열이며 셸을 거치지 않습니다. 사용할 수 있는 토큰: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`, 그리고 `project.variables`의 키. 참고 어댑터는 `examples/toy_project/`에 있습니다.
 
 ```bash
 python3 rl_autolab.py doctor --config configs/my_project.json   # 사전 점검, 학습 없음

@@ -36,7 +36,7 @@ The demo uses a synthetic project and the `rules` backend. It checks the wiring 
    `diagnostics` is optional free-form JSON, for example failure causes or per-seed breakdowns. The proposal agent sees it, together with a min/max/first/last summary of `{run_dir}/train_metrics.jsonl` (one JSON object per line) if your trainer writes one. Richer diagnostics lead to better proposals.
 3. **Config.** Copy `configs/external_project_demo.json` and set `project.root`, `project.python`, the `train`/`eval` command arrays, `parameters` (`value`/`min`/`max`/`max_delta`), `decision` (primary metric, guardrails, target) and `limits`.
 
-Commands are argument arrays, never run through a shell. Available tokens: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`, plus any key in `project.variables`. A reference adapter is in `examples/toy_project/`. An Isaac Lab adapter template lives on [`example/isaaclab`](https://github.com/JihoonPark20/AutoLab/tree/example/isaaclab).
+Commands are argument arrays, never run through a shell. Available tokens: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`, plus any key in `project.variables`. A reference adapter is in `examples/toy_project/`.
 
 ```bash
 python3 rl_autolab.py doctor --config configs/my_project.json   # preflight, no training
