@@ -10,4 +10,6 @@ python3 rl_autolab.py run --config configs/eurekaverse.json --state-dir runs/eur
 
 `train_curve` reports `difficulty`, `walls`, `success` and `steps` per episode, so the planner can see whether a curriculum is too hard or too easy. The paper evolves several generators in parallel and selects by policy performance. Here one generator is tried per cycle.
 
-Paper: *Eurekaverse: Environment Curriculum Generation via Large Language Models* (Liang et al., CoRL 2024, [arXiv:2411.01775](https://arxiv.org/abs/2411.01775)).
+Paper: *Eurekaverse: Environment Curriculum Generation via Large Language Models* (Liang et al., CoRL 2024, [arXiv:2411.01775](https://arxiv.org/abs/2411.01775)). Project page: https://eureka-research.github.io/eurekaverse/
+
+This is a toy re-implementation of the method's loop for AutoLab, not a port of the official code.
