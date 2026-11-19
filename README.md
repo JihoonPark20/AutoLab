@@ -35,7 +35,7 @@ The demo uses a synthetic project and the `rules` backend. It checks the wiring 
    `diagnostics` is optional free-form JSON, for example failure causes or per-seed breakdowns. The proposal agent sees it, together with a min/max/first/last summary of `{run_dir}/train_metrics.jsonl` (one JSON object per line) if your trainer writes one. Richer diagnostics lead to better proposals.
 3. **Config.** Copy `configs/external_project_demo.json` and set `project.root`, `project.python`, the `train`/`eval` command arrays, `parameters` (`value`/`min`/`max`/`max_delta`), `decision` (primary metric, guardrails, target) and `limits`.
 
-Commands are argument arrays, never run through a shell. Available tokens: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {reward_file} {project_root} {autolab_root}`, plus any key in `project.variables`. A reference adapter is in `examples/toy_project/`. Isaac Lab template: `docs/ISAAC_LAB.md`.
+Commands are argument arrays, never run through a shell. Available tokens: `{python} {run_dir} {params_json} {seed} {fixed_seeds} {checkpoint} {resume_checkpoint} {code_file} {project_root} {autolab_root}`, plus any key in `project.variables`. A reference adapter is in `examples/toy_project/`. Isaac Lab template: `docs/ISAAC_LAB.md`.
 
 ```bash
 python3 rl_autolab.py doctor --config configs/my_project.json   # preflight, no training
@@ -61,31 +61,30 @@ Set `"notify": {"command": ["curl", "-d", "{message}", "https://ntfy.sh/<topic>"
 
 The loop stops on `target_score`, the cycle cap, repeated failures, or `max_consecutive_rejections`. On repeated rejections it pauses with `NEEDS_REVIEW` for a human.
 
-## Example: Eureka-style reward search
+## Examples: LLM-guided RL research
 
-AutoLab can run the [Eureka](https://eureka-research.github.io/) loop on any project. The agent writes the training reward as code, training reports per-component reward statistics back ("reward reflection"), and a fixed fitness metric that never sees the reward decides what survives. Add a `reward` section to your config and pass `{reward_file}` to your train command:
+Each example is a runnable CPU demo (stdlib only, seconds per cycle) on its own branch. Each starts from a weak baseline and shows one recorded proposal improving a fixed, held-out fitness metric. Switch the config to `"backend": "claude"` and the agent writes the proposals itself.
+
+| Method | Paper | What the agent searches | Fitness (held out) | Demo result | Branch |
+|---|---|---|---|---|---|
+| Eureka | [*Eureka: Human-Level Reward Design via Coding Large Language Models*](https://arxiv.org/abs/2310.12931) (ICLR 2024) | Reward function code | Greedy success from random starts | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
+| DrEureka | [*DrEureka: Language Model Guided Sim-To-Real Transfer*](https://arxiv.org/abs/2406.01967) (RSS 2024) | Reward code + domain-randomization range | Success on unseen "real" dynamics | 0.52 → 0.91 | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
+| Eurekaverse | [*Eurekaverse: Environment Curriculum Generation via Large Language Models*](https://arxiv.org/abs/2411.01775) (CoRL 2024) | Training-level generator code (curriculum) | Success on unseen obstacle levels | 0.34 → 0.57 | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
+| Reward weight tuning | Common practice; no single paper | Numeric weights of a fixed reward | Greedy success from random starts | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
+
+To search code instead of numbers, add a `code` section to your config and pass `{code_file}` to your train command. The candidate can be a reward, a level generator or any other training-time function:
 
 ```json
-"reward": {"initial": "reward_v0.py", "function": "compute_reward",
-           "interface": "compute_reward(obs) -> (float, dict)", "allowed_imports": ["math"],
-           "context_files": ["env.py"]}
+"code": {"initial": "reward_v0.py", "role": "training reward", "function": "compute_reward",
+         "interface": "compute_reward(obs) -> (float, dict)", "allowed_imports": ["math"],
+         "context_files": ["env.py"]}
 ```
 
-A runnable CPU demo: tabular Q-learning on a gridworld, about 10 seconds per cycle.
-
-```bash
-python3 rl_autolab.py run --config configs/eureka_gridworld.json --state-dir runs/eureka
-# baseline with the sparse reward: success_rate ≈ 0.27, then pauses for a proposal
-cp examples/eureka_gridworld/proposal_shaped.json runs/eureka/proposal.json
-python3 rl_autolab.py run --config configs/eureka_gridworld.json --state-dir runs/eureka
-# proposed shaped reward: success_rate ≈ 0.94 → TARGET_REACHED
-```
-
-With `"backend": "claude"`, the agent writes those proposals itself. Each candidate reward is written only into the run directory and checked statically (allowlisted imports, no file, process or dunder access). That check is not a sandbox, so run reward search in a disposable clone or container. Promoting a found reward into your repo stays a human decision. Unlike the paper, AutoLab tries one candidate per cycle rather than a batch.
+The agent may then return `code`, the complete source of that function, alongside or instead of `updates`. Each candidate is written only into the run directory and checked statically (allowlisted imports, no file, process or dunder access). That check is not a sandbox, so run code search in a disposable clone or container. Promoting found code into your repo stays a human decision.
 
 ## Safety boundaries
 
-- The agent never edits your source files. Beyond an opt-in `reward_code` candidate (see above), observation, termination or dynamics changes go through `scripts/code_lane.py` (an isolated Git worktree) plus human review.
+- The agent never edits your source files. Beyond an opt-in `code` candidate (see above), observation, termination or dynamics changes go through `scripts/code_lane.py` (an isolated Git worktree) plus human review.
 - `ANTHROPIC_API_KEY` in the environment is refused unless `allow_api_billing: true`. Call caps count local invocations, not tokens, and do not bypass provider limits.
 - The run directory must sit outside `project.root`. `project.git_guard` rejects runs that change the research repo, but it is not a sandbox; use a disposable clone or container for untrusted code.
 - The config is snapshotted when a run starts. Changing it requires a new `--state-dir`.
@@ -99,7 +98,7 @@ With `"backend": "claude"`, the agent writes those proposals itself. Each candid
 
 ## Related work
 
-Similar loops, where an LLM proposes and training feedback decides: **Eureka** (LLM-written rewards), **DrEureka** (domain randomization for sim-to-real), **Eurekaverse** (environment curricula) and Karpathy's **autoresearch** (an agent edits a training script under a fixed metric). AutoLab is the operations side of the same idea. It is simulator-agnostic, budgeted, crash-safe, and limited to a bounded parameter space unless reward search is enabled.
+Similar loops, where an LLM proposes and training feedback decides: **Eureka** (LLM-written rewards), **DrEureka** (domain randomization for sim-to-real), **Eurekaverse** (environment curricula) and Karpathy's **autoresearch** (an agent edits a training script under a fixed metric). AutoLab is the operations side of the same idea, and the examples above reproduce the first three in miniature. It is simulator-agnostic, budgeted, crash-safe, and limited to a bounded parameter space unless code search is enabled.
 
 More: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/OPERATIONS.md`](docs/OPERATIONS.md) · [`docs/ISAAC_LAB.md`](docs/ISAAC_LAB.md)
 
