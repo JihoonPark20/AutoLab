@@ -1,0 +1,7 @@
+{
+  "hypothesis": "sim_success_rate is 1.0 but real success is ~0.5 and every failure is a fall: the policy hugs the cliff because simulation never slips. Randomizing slip in training should teach a safer route",
+  "updates": {
+    "slip_max": 0.2
+  },
+  "expected_effect": "real success_rate above 0.85 with sim_success_rate unchanged"
+}

@@ -1,0 +1,106 @@
+{
+  "name": "dreureka",
+  "research_goal": "Choose the reward and domain-randomization range in simulation so the policy succeeds on held-out real dynamics (slip 0.2) it never trains on directly",
+  "backend": "manual",
+  "claude_model": "sonnet",
+  "agent_timeout_seconds": 300,
+  "max_cycles": 6,
+  "max_changed_parameters": 2,
+  "poll_seconds": 0.1,
+  "train_seeds": [
+    40,
+    41
+  ],
+  "parameters": {
+    "slip_min": {
+      "value": 0.0,
+      "min": 0.0,
+      "max": 0.3,
+      "max_delta": 0.1
+    },
+    "slip_max": {
+      "value": 0.0,
+      "min": 0.0,
+      "max": 0.6,
+      "max_delta": 0.2
+    }
+  },
+  "code": {
+    "initial": "../examples/dreureka/reward_v0.py",
+    "role": "training reward",
+    "function": "compute_reward",
+    "interface": "compute_reward(obs) -> (float, dict[str, float]). obs keys: pos, next_pos, goal (x, y tuples), reached (bool), fell (bool, episode ends), step (int).",
+    "allowed_imports": [
+      "math"
+    ],
+    "max_bytes": 8000,
+    "context_files": [
+      "env.py"
+    ]
+  },
+  "train": {
+    "command": [
+      "{python}",
+      "train.py",
+      "--run-dir",
+      "{run_dir}",
+      "--params-json",
+      "{params_json}",
+      "--code-file",
+      "{code_file}",
+      "--seed",
+      "{seed}",
+      "--episodes",
+      "{episodes}"
+    ],
+    "timeout_seconds": 120
+  },
+  "eval": {
+    "command": [
+      "{python}",
+      "evaluate.py",
+      "--run-dir",
+      "{run_dir}",
+      "--checkpoint",
+      "{checkpoint}",
+      "--fixed-seeds",
+      "{fixed_seeds}",
+      "--real-slip",
+      "{real_slip}"
+    ],
+    "timeout_seconds": 60,
+    "fixed_seeds": [
+      501,
+      502,
+      503
+    ]
+  },
+  "decision": {
+    "primary_metric": "success_rate",
+    "maximize": true,
+    "target_score": 0.9,
+    "min_improvement": 0.01,
+    "guardrails": {
+      "sim_success_rate": {
+        "min": 0.9
+      }
+    }
+  },
+  "limits": {
+    "max_calls_24h": 6,
+    "max_calls_7d": 20,
+    "min_seconds_between_calls": 0,
+    "max_consecutive_failures": 2,
+    "max_consecutive_rejections": 3
+  },
+  "project": {
+    "root": "../examples/dreureka",
+    "python": "auto",
+    "enforce_external_runs": true,
+    "git_guard": false,
+    "variables": {
+      "episodes": 400,
+      "real_slip": 0.2
+    }
+  }
+}
