@@ -63,14 +63,16 @@ The loop stops on `target_score`, the cycle cap, repeated failures, or `max_cons
 
 ## Examples: LLM-guided RL research
 
-Each example is a runnable CPU demo (stdlib only, seconds per cycle) on its own branch. Each starts from a weak baseline and shows one recorded proposal improving a fixed, held-out fitness metric. Switch the config to `"backend": "claude"` and the agent writes the proposals itself.
+Small, self-contained re-implementations written for AutoLab. Each runs on CPU with the standard library in seconds per cycle. They are **toy versions of each method's loop, not ports of the official code**; the project pages show the real robot setups. Each starts from a weak baseline, and one recorded proposal improves a fixed, held-out metric. With `"backend": "claude"` the agent writes the proposals itself.
 
-| Method | Paper | What the agent searches | Fitness (held out) | Demo result | Branch |
-|---|---|---|---|---|---|
-| Eureka | [*Eureka: Human-Level Reward Design via Coding Large Language Models*](https://arxiv.org/abs/2310.12931) (ICLR 2024) | Reward function code | Greedy success from random starts | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
-| DrEureka | [*DrEureka: Language Model Guided Sim-To-Real Transfer*](https://arxiv.org/abs/2406.01967) (RSS 2024) | Reward code + domain-randomization range | Success on unseen "real" dynamics | 0.52 → 0.91 | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
-| Eurekaverse | [*Eurekaverse: Environment Curriculum Generation via Large Language Models*](https://arxiv.org/abs/2411.01775) (CoRL 2024) | Training-level generator code (curriculum) | Success on unseen obstacle levels | 0.34 → 0.57 | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
-| Reward weight tuning | Common practice; no single paper | Numeric weights of a fixed reward | Greedy success from random starts | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
+<p align="center"><img src="docs/assets/demo_dreureka.svg" alt="DrEureka demo: without randomization the policy hugs the cliff (real success 0.52); with slip randomization it keeps a one-row margin (0.91)" width="100%"></p>
+
+| Method | What the agent searches | Toy demo (held-out success) | Branch |
+|---|---|---|---|
+| [**Eureka**](https://eureka-research.github.io/) · ICLR 2024 · [paper](https://arxiv.org/abs/2310.12931) | Reward function code | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
+| [**DrEureka**](https://eureka-research.github.io/dr-eureka/) · RSS 2024 · [paper](https://arxiv.org/abs/2406.01967) | Reward code + domain-randomization range | 0.52 → 0.91 on unseen "real" dynamics | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
+| [**Eurekaverse**](https://eureka-research.github.io/eurekaverse/) · CoRL 2024 · [paper](https://arxiv.org/abs/2411.01775) | Training-level generator code (curriculum) | 0.34 → 0.57 on unseen levels | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
+| **Reward weight tuning** · common practice | Numeric weights of a fixed reward | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
 
 To search code instead of numbers, add a `code` section to your config and pass `{code_file}` to your train command. The candidate can be a reward, a level generator or any other training-time function:
 
@@ -95,10 +97,6 @@ The agent may then return `code`, the complete source of that function, alongsid
 - In `finetune_from_champion` mode, a gain may come from extra training alone. Run a compute-matched control for causal claims.
 - Interventions happen between runs. Changes in the middle of a rollout need a callback inside your training loop.
 - Native Windows is unsupported (`fcntl`, POSIX process groups).
-
-## Related work
-
-Similar loops, where an LLM proposes and training feedback decides: **Eureka** (LLM-written rewards), **DrEureka** (domain randomization for sim-to-real), **Eurekaverse** (environment curricula) and Karpathy's **autoresearch** (an agent edits a training script under a fixed metric). AutoLab is the operations side of the same idea, and the examples above reproduce the first three in miniature. It is simulator-agnostic, budgeted, crash-safe, and limited to a bounded parameter space unless code search is enabled.
 
 More: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/OPERATIONS.md`](docs/OPERATIONS.md) · [`docs/ISAAC_LAB.md`](docs/ISAAC_LAB.md)
 

@@ -63,14 +63,16 @@ caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
 
 ## 示例：LLM 引导的 RL 研究
 
-每个示例都是可直接在 CPU 上运行的演示（仅标准库，每个循环几秒），各自位于一个分支上。每个示例都从较弱的基线出发，展示一条预先记录的提案如何提升一个固定的 held-out 适应度指标。把配置改为 `"backend": "claude"`，智能体就会自己编写提案。
+为 AutoLab 新写的小型独立复现。全部只用标准库，在 CPU 上每个循环只需几秒。**它们是各方法循环的 toy 版本，并非官方代码的移植**；真实的机器人实验请见各项目主页。每个示例都从较弱的基线出发，由一条预先记录的提案提升固定的 held-out 指标。设置 `"backend": "claude"` 后，智能体会自己编写提案。
 
-| 方法 | 论文 | 智能体搜索的对象 | 适应度（held-out） | 演示结果 | 分支 |
-|---|---|---|---|---|---|
-| Eureka | [*Eureka: Human-Level Reward Design via Coding Large Language Models*](https://arxiv.org/abs/2310.12931) (ICLR 2024) | 奖励函数代码 | 随机起点的 greedy 成功率 | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
-| DrEureka | [*DrEureka: Language Model Guided Sim-To-Real Transfer*](https://arxiv.org/abs/2406.01967) (RSS 2024) | 奖励代码 + 域随机化范围 | 在训练未见的"真实"动力学上的成功率 | 0.52 → 0.91 | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
-| Eurekaverse | [*Eurekaverse: Environment Curriculum Generation via Large Language Models*](https://arxiv.org/abs/2411.01775) (CoRL 2024) | 训练关卡生成器代码（课程） | 在未见过的障碍关卡上的成功率 | 0.34 → 0.57 | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
-| 奖励权重调优 | 常见实践，无单一论文 | 固定奖励的数值权重 | 随机起点的 greedy 成功率 | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
+<p align="center"><img src="docs/assets/demo_dreureka.svg" alt="DrEureka 演示：不做随机化时策略贴着悬崖走（真实成功率 0.52）；加入打滑随机化后保持一格余量（0.91）" width="100%"></p>
+
+| 方法 | 智能体搜索的对象 | Toy 演示（held-out 成功率） | 分支 |
+|---|---|---|---|
+| [**Eureka**](https://eureka-research.github.io/) · ICLR 2024 · [paper](https://arxiv.org/abs/2310.12931) | 奖励函数代码 | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
+| [**DrEureka**](https://eureka-research.github.io/dr-eureka/) · RSS 2024 · [paper](https://arxiv.org/abs/2406.01967) | 奖励代码 + 域随机化范围 | 在未见过的"真实"动力学上 0.52 → 0.91 | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
+| [**Eurekaverse**](https://eureka-research.github.io/eurekaverse/) · CoRL 2024 · [paper](https://arxiv.org/abs/2411.01775) | 训练关卡生成器代码（课程） | 在未见过的关卡上 0.34 → 0.57 | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
+| **奖励权重调优** · 常见实践 | 固定奖励的数值权重 | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
 
 若要搜索代码而不是数值，在配置中加入 `code` 部分，并把 `{code_file}` 传给训练命令。候选可以是奖励、关卡生成器或任何训练时使用的函数：
 
@@ -95,10 +97,6 @@ caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
 - 在 `finetune_from_champion` 模式下，提升可能仅来自额外的训练。若要做因果结论，需要运行算力匹配的对照实验。
 - 干预只发生在两次训练之间。若要在 rollout 过程中修改，需要在训练循环内部加入回调。
 - 不支持原生 Windows（依赖 `fcntl` 和 POSIX 进程组）。
-
-## 相关工作
-
-由 LLM 提出方案、由训练反馈裁决的类似循环：**Eureka**（LLM 编写奖励函数）、**DrEureka**（面向 sim-to-real 的域随机化）、**Eurekaverse**（环境课程）、Karpathy 的 **autoresearch**（在固定指标下由智能体修改训练脚本）。AutoLab 是同一思路的运维层（上面的示例以小规模复现了前三种方法）：与仿真器无关、有预算控制、能从崩溃中恢复，并且除非开启代码搜索，只在受限的参数空间内调整。
 
 更多：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/OPERATIONS.md`](docs/OPERATIONS.md) · [`docs/ISAAC_LAB.md`](docs/ISAAC_LAB.md)
 

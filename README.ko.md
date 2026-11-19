@@ -63,14 +63,16 @@ caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
 
 ## 예시: LLM이 이끄는 RL 연구
 
-각 예시는 CPU로 바로 돌릴 수 있는 데모이며(표준 라이브러리만, 사이클당 몇 초), 브랜치마다 하나씩 있습니다. 모두 약한 기준선에서 시작해, 미리 기록해 둔 제안 하나가 보상과 무관한 고정 지표를 개선하는 과정을 보여 줍니다. 설정을 `"backend": "claude"`로 바꾸면 에이전트가 제안을 직접 작성합니다.
+AutoLab용으로 새로 작성한 작고 독립적인 재구현입니다. 모두 표준 라이브러리만으로 CPU에서 사이클당 몇 초면 돌아갑니다. **각 방법의 루프를 축소한 toy 버전이며, 공식 코드를 옮긴 것은 아닙니다.** 실제 로봇 실험은 각 프로젝트 페이지에서 볼 수 있습니다. 모두 약한 기준선에서 시작하고, 미리 기록해 둔 제안 하나가 고정된 held-out 지표를 개선합니다. `"backend": "claude"`로 바꾸면 에이전트가 제안을 직접 작성합니다.
 
-| 방법 | 논문 | 에이전트가 탐색하는 것 | 적합도 (held-out) | 데모 결과 | 브랜치 |
-|---|---|---|---|---|---|
-| Eureka | [*Eureka: Human-Level Reward Design via Coding Large Language Models*](https://arxiv.org/abs/2310.12931) (ICLR 2024) | 보상 함수 코드 | 무작위 시작점에서의 greedy 성공률 | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
-| DrEureka | [*DrEureka: Language Model Guided Sim-To-Real Transfer*](https://arxiv.org/abs/2406.01967) (RSS 2024) | 보상 코드 + 도메인 랜덤화 범위 | 학습에 없던 "실제" 동역학에서의 성공률 | 0.52 → 0.91 | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
-| Eurekaverse | [*Eurekaverse: Environment Curriculum Generation via Large Language Models*](https://arxiv.org/abs/2411.01775) (CoRL 2024) | 학습 레벨 생성기 코드(커리큘럼) | 처음 보는 장애물 레벨에서의 성공률 | 0.34 → 0.57 | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
-| 보상 가중치 튜닝 | 일반적인 실무 방법, 특정 논문 없음 | 고정된 보상의 숫자 가중치 | 무작위 시작점에서의 greedy 성공률 | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
+<p align="center"><img src="docs/assets/demo_dreureka.svg" alt="DrEureka 데모: 랜덤화 없이는 절벽에 붙어 이동(실제 성공률 0.52), 미끄러짐 랜덤화 후에는 한 칸 여유를 두고 이동(0.91)" width="100%"></p>
+
+| 방법 | 에이전트가 탐색하는 것 | Toy 데모 (held-out 성공률) | 브랜치 |
+|---|---|---|---|
+| [**Eureka**](https://eureka-research.github.io/) · ICLR 2024 · [paper](https://arxiv.org/abs/2310.12931) | 보상 함수 코드 | 0.27 → 0.94 | [`example/eureka`](https://github.com/JihoonPark20/AutoLab/tree/example/eureka/examples/eureka) |
+| [**DrEureka**](https://eureka-research.github.io/dr-eureka/) · RSS 2024 · [paper](https://arxiv.org/abs/2406.01967) | 보상 코드 + 도메인 랜덤화 범위 | 학습에 없던 "실제" 동역학에서 0.52 → 0.91 | [`example/dreureka`](https://github.com/JihoonPark20/AutoLab/tree/example/dreureka/examples/dreureka) |
+| [**Eurekaverse**](https://eureka-research.github.io/eurekaverse/) · CoRL 2024 · [paper](https://arxiv.org/abs/2411.01775) | 학습 레벨 생성기 코드(커리큘럼) | 처음 보는 레벨에서 0.34 → 0.57 | [`example/eurekaverse`](https://github.com/JihoonPark20/AutoLab/tree/example/eurekaverse/examples/eurekaverse) |
+| **보상 가중치 튜닝** · 일반적인 실무 방법 | 고정된 보상의 숫자 가중치 | 0.27 → 0.96 → 0.99 | [`example/reward-weights`](https://github.com/JihoonPark20/AutoLab/tree/example/reward-weights/examples/reward_weights) |
 
 숫자 대신 코드를 탐색하려면 설정에 `code` 항목을 추가하고 학습 명령에 `{code_file}`을 넘기세요. 후보는 보상이든, 레벨 생성기든, 학습 중에 쓰는 어떤 함수든 될 수 있습니다:
 
@@ -95,10 +97,6 @@ caffeinate -dimsu python3 rl_autolab.py run --config configs/my_project.json \
 - `finetune_from_champion` 모드에서는 추가 학습만으로 성능이 오를 수 있습니다. 인과적 주장을 하려면 연산량을 맞춘 대조 실험이 필요합니다.
 - 개입은 학습 실행 사이에서만 일어납니다. 롤아웃 도중에 바꾸려면 학습 루프 안에 콜백이 필요합니다.
 - Windows 네이티브는 지원하지 않습니다(`fcntl`, POSIX 프로세스 그룹).
-
-## 관련 연구
-
-LLM이 제안하고 학습 결과가 판정하는 비슷한 루프: **Eureka**(LLM이 작성한 보상), **DrEureka**(sim-to-real 도메인 랜덤화), **Eurekaverse**(환경 커리큘럼), Karpathy의 **autoresearch**(고정 지표 아래에서 에이전트가 학습 스크립트를 수정). AutoLab은 같은 아이디어의 운영 계층이며, 위 예시는 앞의 세 방법을 작은 규모로 재현합니다. 시뮬레이터에 무관하고, 예산을 관리하고, 장애에서 복구하며, 코드 탐색을 켜지 않는 한 제한된 파라미터 공간 안에서만 움직입니다.
 
 더 보기: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/OPERATIONS.md`](docs/OPERATIONS.md) · [`docs/ISAAC_LAB.md`](docs/ISAAC_LAB.md)
 
