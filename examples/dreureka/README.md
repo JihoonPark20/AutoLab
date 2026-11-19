@@ -10,4 +10,6 @@ python3 rl_autolab.py run --config configs/dreureka.json --state-dir runs/dreure
 
 `diagnostics` (per-seed real success and falls) and `train_curve` (`r_fall`, `slip`) give the planner the sim-to-real evidence. The paper's reward-aware physics prior (probing the policy across physics values before choosing ranges) is not reproduced. Here each range is judged by a full train-and-evaluate cycle.
 
-Paper: *DrEureka: Language Model Guided Sim-To-Real Transfer* (Ma et al., RSS 2024, [arXiv:2406.01967](https://arxiv.org/abs/2406.01967)).
+Paper: *DrEureka: Language Model Guided Sim-To-Real Transfer* (Ma et al., RSS 2024, [arXiv:2406.01967](https://arxiv.org/abs/2406.01967)). Project page: https://eureka-research.github.io/dr-eureka/
+
+This is a toy re-implementation of the method's loop for AutoLab, not a port of the official code.
