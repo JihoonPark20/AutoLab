@@ -1,4 +1,0 @@
-{
-  "curriculum_difficulty": "env.curriculum.your_curriculum_term.params.difficulty",
-  "reward_tracking": "env.rewards.your_tracking_term.weight"
-}

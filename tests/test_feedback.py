@@ -9,6 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from rl_autolab import as_command, read_json, render_prompt
+from tests.fixtures import toy_config
 
 
 class TestFeedback(unittest.TestCase):
@@ -21,7 +22,7 @@ class TestFeedback(unittest.TestCase):
         return read_json(td/'state'/'state.json')
 
     def test_diagnostics_and_train_curve_reach_prompt(self):
-        cfg = read_json(ROOT/'configs/demo.json')
+        cfg = toy_config()
         with tempfile.TemporaryDirectory() as td:
             st = self.run_demo(cfg, Path(td))
             diag = st['history'][-1]['diagnostics'][0]
@@ -34,7 +35,7 @@ class TestFeedback(unittest.TestCase):
             self.assertIn('train_curve', prompt)
 
     def test_notify_on_exit(self):
-        cfg = copy.deepcopy(read_json(ROOT/'configs/demo.json'))
+        cfg = toy_config()
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)/'note.txt'
             cfg['notify'] = {'command': [sys.executable, '-c', 'import sys; open(sys.argv[1], "w").write(sys.argv[2])',

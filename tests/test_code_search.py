@@ -8,6 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from rl_autolab import check_code, generate_next_params, init_state, read_json
+from tests.fixtures import toy_config
 
 SPEC = {'function': 'compute_reward', 'allowed_imports': ['math'], 'max_bytes': 400}
 GOOD = 'import math\ndef compute_reward(obs):\n    return math.tanh(1.0), {}\n'
@@ -48,7 +49,7 @@ class TestCodeSearch(unittest.TestCase):
                 check_code(code, SPEC)
 
     def test_code_needs_code_section(self):
-        cfg = read_json(ROOT/'configs/demo.json')
+        cfg = toy_config()
         cfg['backend'] = 'manual'
         with tempfile.TemporaryDirectory() as td:
             td = Path(td)

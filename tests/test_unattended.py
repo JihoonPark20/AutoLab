@@ -12,6 +12,7 @@ import unittest.mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from rl_autolab import generate_next_params, init_state, process_alive, read_json, validate_config
+from tests.fixtures import toy_config
 
 
 def fake_claude(bindir: Path, stdout: dict) -> None:
@@ -23,7 +24,7 @@ def fake_claude(bindir: Path, stdout: dict) -> None:
 class TestUnattended(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cfg = read_json(ROOT/'configs/demo.json')
+        cls.cfg = toy_config()
 
     def test_exited_child_is_not_alive(self):
         p = subprocess.Popen([sys.executable, '-c', 'pass'])

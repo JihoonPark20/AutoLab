@@ -3,8 +3,6 @@
 ## Layers
 
 ```
-                        Herdr or Orca (optional terminal/IDE)
-                                      |
                interactive Claude reviewer / model code developer
                                       |
                     separate external research project checkout

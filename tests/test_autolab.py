@@ -9,12 +9,13 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from rl_autolab import parse_proposal, read_json, init_state, accept_result, check_agent_budget, validate_config
+from tests.fixtures import toy_config
 
 
 class TestAutolab(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cfg=read_json(ROOT/'configs/demo.json')
+        cls.cfg=toy_config()
 
     def test_reject_unsafe_changes(self):
         base={k:v['value'] for k,v in self.cfg['parameters'].items()}

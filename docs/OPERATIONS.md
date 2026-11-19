@@ -1,15 +1,15 @@
-# Running Universal AutoLab through a terminal, Herdr, or Orca
+# Operating AutoLab
 
-AutoLab is a Python process; Herdr/Orca are optional operator interfaces.
+AutoLab is a plain Python process; any terminal works.
 
-## Recommended 2-pane workflow
+## Recommended two-terminal workflow
 
-- Pane A: open your research repo, run `claude` interactively for reviewing failure logs and code changes. Any code edits need review in a separate copy/worktree.
-- Pane B: open the AutoLab directory, run `python rl_autolab.py run --config configs/my_project.json --state-dir runs/exp01 --cycles 2` under the project's activated Python environment. Training and evaluation run without continuous Claude turns.
+- Terminal A: open your research repo, run `claude` interactively for reviewing failure logs and code changes. Any code edits need review in a separate copy/worktree.
+- Terminal B: open the AutoLab directory, run `python rl_autolab.py run --config configs/my_project.json --state-dir runs/exp01 --cycles 2` under the project's activated Python environment. Training and evaluation run without continuous Claude turns.
 
-If `backend=manual`, Pane A reads `runs/exp01/proposal_request.md` and writes `runs/exp01/proposal.json` in AutoLab's directory. Pane B reruns the same manager command.
+If `backend=manual`, Terminal A reads `runs/exp01/proposal_request.md` and writes `runs/exp01/proposal.json` in AutoLab's directory. Terminal B reruns the same manager command.
 
-If `backend=claude`, the manager directly executes `claude -p` only after evaluation. It does **not** send a message into the already-open interactive Claude pane in Herdr or Orca. The interactive pane is a separate session for observing/debugging.
+If `backend=claude`, the manager directly executes `claude -p` only after evaluation. It does **not** send anything to an interactive Claude session you have open; that session is only for observing and debugging.
 
 ## Ubuntu process management
 
