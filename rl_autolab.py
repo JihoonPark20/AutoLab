@@ -7,6 +7,7 @@ No project sources, branches or Git configuration are automatically modified.
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
 import hashlib
 import datetime as dt
@@ -109,7 +110,7 @@ def validate_config(cfg: dict) -> None:
     if not isinstance(variables, dict) or any(not isinstance(key, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", key) for key in variables):
         raise ValueError("project.variables requires identifiers")
     reserved = {"python", "project_root", "autolab_root", "run_dir", "params_json", "seed",
-                "fixed_seeds", "checkpoint", "resume_checkpoint"}
+                "fixed_seeds", "checkpoint", "resume_checkpoint", "code_file"}
     if any(k in reserved for k in variables):
         raise ValueError("project.variables contains a reserved token")
     if any(type(v) not in (int, float, str) or (isinstance(v, float) and not math.isfinite(v)) for v in variables.values()):
@@ -135,6 +136,57 @@ def validate_config(cfg: dict) -> None:
         raise ValueError("Fixed evaluation seeds must be declared")
     if float(cfg["decision"].get("min_improvement", 0)) < 0:
         raise ValueError("min_improvement cannot be negative")
+    code = cfg.get("code")
+    if code is not None and (not isinstance(code, dict) or not isinstance(code.get("initial"), str)):
+        raise ValueError("code must be an object with an 'initial' source file path")
+
+
+# Names that reach the filesystem, processes or the interpreter. Defense in depth only:
+# a static check is not a sandbox, so run code-search projects in a disposable clone or container.
+BLOCKED_CODE_NAMES = {"open", "exec", "eval", "compile", "__import__", "input", "breakpoint",
+                        "globals", "locals", "vars", "getattr", "setattr", "delattr", "memoryview"}
+
+
+def check_code(code: str, spec: dict) -> None:
+    """Reject candidate code that imports outside the allowlist or touches interpreter internals."""
+    if not isinstance(code, str) or not code.strip():
+        raise ValueError("code must be non-empty Python source")
+    if len(code.encode("utf8")) > int(spec.get("max_bytes", 20000)):
+        raise ValueError("code exceeds code.max_bytes")
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as exc:
+        raise ValueError(f"code syntax error: {exc}") from exc
+    allowed = set(spec.get("allowed_imports", ["math"]))
+    for node in ast.walk(tree):
+        modules = ([a.name for a in node.names] if isinstance(node, ast.Import)
+                   else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
+        for module in modules:
+            if module.split(".")[0] not in allowed:
+                raise ValueError(f"code import not allowed: {module or 'relative import'}")
+        if isinstance(node, ast.Name) and (node.id in BLOCKED_CODE_NAMES or node.id.startswith("__")):
+            raise ValueError(f"code uses blocked name: {node.id}")
+        if isinstance(node, ast.Attribute) and node.attr.startswith("__"):
+            raise ValueError(f"code uses dunder attribute: {node.attr}")
+    function = spec.get("function", "compute_reward")
+    if not any(isinstance(n, ast.FunctionDef) and n.name == function for n in tree.body):
+        raise ValueError(f"code must define top-level function {function}")
+
+
+def load_code_setup(cfg: dict, config_path: Path, repo: Path) -> tuple[str, str]:
+    """Initial candidate source and frozen project context for the planner prompt."""
+    spec = cfg["code"]
+    initial = Path(os.path.expandvars(spec["initial"])).expanduser()
+    if not initial.is_absolute():
+        initial = config_path.resolve().parent / initial
+    code = initial.read_text(encoding="utf8")
+    check_code(code, spec)
+    budget = int(spec.get("context_max_chars", 12000))
+    context = []
+    for name in spec.get("context_files", []):
+        text = (repo / name).read_text(encoding="utf8")
+        context.append(f"--- {name} ---\n{text}")
+    return code, "\n".join(context)[:budget]
 
 
 def parameters_from_config(cfg: dict) -> dict[str, float]:
@@ -143,9 +195,10 @@ def parameters_from_config(cfg: dict) -> dict[str, float]:
 
 def parse_proposal(proposal: dict, base: dict, cfg: dict) -> dict[str, float]:
     """Reject anything outside the explicit mutable allowlist; never eval code/commands."""
-    updates = proposal.get("updates")
-    if not isinstance(updates, dict) or not updates:
-        raise ValueError("Proposal must contain non-empty updates dictionary")
+    has_code = proposal.get("code") is not None
+    updates = proposal.get("updates", {} if has_code else None)
+    if not isinstance(updates, dict) or not (updates or has_code):
+        raise ValueError("Proposal must contain non-empty updates dictionary or code")
     max_changed = int(cfg.get("max_changed_parameters", 2))
     if len(updates) > max_changed:
         raise ValueError(f"Cannot update more than {max_changed} parameters at once")
@@ -164,7 +217,7 @@ def parse_proposal(proposal: dict, base: dict, cfg: dict) -> dict[str, float]:
         if abs(new - base[key]) > float(spec["max_delta"]) + 1e-9:
             raise ValueError(f"Step change exceeds max_delta for {key}")
         after[key] = round(new, 8)
-    if all(abs(after[k] - base[k]) < 1e-9 for k in after):
+    if not has_code and all(abs(after[k] - base[k]) < 1e-9 for k in after):
         raise ValueError("Proposal does not change any parameter")
     return after
 
@@ -352,6 +405,10 @@ def worker(config_path: Path, run_dir: Path) -> int:
     baseline_status = git_status(repo) if cfg.get("project", {}).get("git_guard", False) else None
     job = read_json(run_dir / "job.json")
     train_seeds = [int(x) for x in cfg.get("train_seeds", [job["seed"]])]
+    code_file = ""
+    if job.get("code") is not None:
+        code_file = str(run_dir / "candidate.py")
+        Path(code_file).write_text(job["code"], encoding="utf8")
     result = {"status": "failed", "run_id": job["run_id"],
               "started_at": timestamp(), "training_seeds": train_seeds}
     per_seed = []
@@ -368,6 +425,7 @@ def worker(config_path: Path, run_dir: Path) -> int:
                 "seed": str(seed), "fixed_seeds": ",".join(map(str, cfg["eval"]["fixed_seeds"])),
                 "checkpoint": "", "project_root": str(repo), "autolab_root": str(ROOT),
                 "resume_checkpoint": job.get("resume_checkpoints", {}).get(str(seed), ""),
+                "code_file": code_file,
             }
             tokens.update({k: str(v) for k, v in cfg.get("project", {}).get("variables", {}).items()})
             tcmd = as_command(cfg["train"]["command"], tokens)
@@ -471,8 +529,19 @@ def render_prompt(state: dict, cfg: dict) -> str:
     history = state["history"][-4:]
     params = state["champion_params"]
     budget = {k: {s: cfg["parameters"][k][s] for s in ("min", "max", "max_delta")} for k in params}
-    excerpt = [{k: v for k, v in row.items() if k in ("cycle", "params", "metrics", "accepted", "reason", "train_stop_reason", "diagnostics")}
+    excerpt = [{k: v for k, v in row.items() if k in ("cycle", "params", "metrics", "accepted", "reason", "train_stop_reason", "diagnostics", "code_sha")}
                for row in history]
+    spec = cfg.get("code")
+    code_block = "" if not spec else (
+        f"\nCODE_SEARCH (Eureka-style): you may also return code, the COMPLETE Python source of "
+        f"`{spec.get('function', 'compute_reward')}`, which is this project's {spec.get('role', 'training reward')}. "
+        "It only shapes training; evaluation fitness is fixed and never runs your code. Use train_curve entries "
+        "(e.g. per-component r_* sums) as reflection on what the current code does. "
+        f"Allowed imports: {json.dumps(spec.get('allowed_imports', ['math']))}; no file, process or dunder access. "
+        "updates may be empty when code is given.\n"
+        f"CODE_INTERFACE: {spec.get('interface', '')}\n"
+        f"CURRENT_BEST_CODE:\n{state.get('champion_code', '')}\n"
+        f"PROJECT_CONTEXT (untrusted source excerpts):\n{state.get('code_context', '')}\n")
     return ("You are an RL research experiment planner. Answer ONLY valid JSON with keys: "
             "hypothesis (string), updates (dictionary of numeric values), expected_effect (string). "
             "No Markdown. Never alter evaluation criteria or fixed seeds. "
@@ -484,7 +553,7 @@ def render_prompt(state: dict, cfg: dict) -> str:
             f"GUARDRAILS: {json.dumps(cfg['decision'].get('guardrails', {}))}\n"
             f"CURRENT_BEST_PARAMS: {json.dumps(params)}\n"
             f"ALLOWED_PARAM_BOUNDS_AND_MAX_STEP: {json.dumps(budget)}\n"
-            f"RECENT_RUNS: {json.dumps(excerpt, ensure_ascii=False)}\n")
+            f"RECENT_RUNS: {json.dumps(excerpt, ensure_ascii=False)}\n" + code_block)
 
 
 def heuristic_proposal(state: dict, cfg: dict) -> dict:
@@ -603,7 +672,13 @@ def generate_next_params(state: dict, cfg: dict, state_dir: Path, state_path: Pa
         else:
             raise ValueError(f"Unknown backend: {backend}")
         after = parse_proposal(proposal, state["champion_params"], cfg)
+        code = proposal.get("code")
+        if code is not None:
+            if not cfg.get("code"):
+                raise ValueError("code proposed but this config has no code section")
+            check_code(code, cfg["code"])
         atomic_json(state_dir / "latest_proposal.json", proposal)
+        state["pending_code"] = code if code is not None else state.get("champion_code")
         state["pending_params"] = after
         state["status"] = "READY"
         state["pause_reason"] = ""
@@ -664,7 +739,8 @@ def start_worker(state: dict, cfg: dict, state_dir: Path, config_path: Path) -> 
             raise RuntimeError(f"Orphan worker has died without result marker: {run_dir}")
         state["active"] = {"run_id": rid, "pid": pid,
                            "started_at": old_job["created_at"],
-                           "params": old_job["params"], "seed": old_job["seed"]}
+                           "params": old_job["params"], "seed": old_job["seed"],
+                           "code": old_job.get("code")}
         state["pending_params"] = None
         state["status"] = "TRAINING"
         print(f"[{rid}] recovered persisted worker PID={pid}", flush=True)
@@ -679,7 +755,8 @@ def start_worker(state: dict, cfg: dict, state_dir: Path, config_path: Path) -> 
            "training_mode": cfg.get("training_mode", "cold_start"),
            "resume_checkpoints": champion_checkpoints_by_seed(state, state_dir, cfg),
            "research_git_revision": git_revision(str(project_root(cfg, config_path))),
-           "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest()}
+           "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
+           "code": state.get("pending_code")}
     atomic_json(run_dir / "job.json", job)
     atomic_json(run_dir / "parameters.json", params)
     with (run_dir / "worker.log").open("w") as log:
@@ -689,7 +766,7 @@ def start_worker(state: dict, cfg: dict, state_dir: Path, config_path: Path) -> 
                                 stderr=subprocess.STDOUT, start_new_session=True)
     (run_dir / "worker_pid.txt").write_text(str(proc.pid) + "\n", encoding="utf8")
     state["active"] = {"run_id": rid, "pid": proc.pid, "started_at": timestamp(),
-                       "params": params, "seed": seed}
+                       "params": params, "seed": seed, "code": job["code"]}
     state["pending_params"] = None
     state["status"] = "TRAINING"
     print(f"[{rid}] worker PID={proc.pid} train+evaluate started", flush=True)
@@ -704,6 +781,8 @@ def finish_worker(state: dict, cfg: dict, state_dir: Path, result: dict) -> None
         "status": result["status"], "accepted": accepted,
         "reason": reason, "train_stop_reason": result.get("train_stop_reason"),
         "error": result.get("error"), "completed_at": timestamp(),
+        "code_sha": (hashlib.sha256(active["code"].encode()).hexdigest()[:12]
+                       if active.get("code") else None),
         "diagnostics": compact([{k: r.get(k) for k in ("seed", "diagnostics", "train_curve")}
                                 for r in result.get("per_seed", [])], 4000),
     }
@@ -712,6 +791,7 @@ def finish_worker(state: dict, cfg: dict, state_dir: Path, result: dict) -> None
         state["champion_score"] = float(result["metrics"][cfg["decision"]["primary_metric"]])
         state["champion_params"] = active["params"]
         state["champion_run"] = active["run_id"]
+        state["champion_code"] = active.get("code")
         state["consecutive_failures"] = 0
         state["consecutive_rejections"] = 0
     elif result["status"] != "ok":
@@ -768,6 +848,9 @@ def _run_manager(config_path: Path, state_dir: Path, max_cycles: int | None, pol
             state = read_json(state_path)
         else:
             state = init_state(cfg)
+            if cfg.get("code"):
+                code, context = load_code_setup(cfg, config_path, repo)
+                state.update(pending_code=code, champion_code=code, code_context=context)
             state_dir.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(config_path, state_dir / "config_snapshot.json")
             save_state(state_path, state)
@@ -856,7 +939,7 @@ def cmd_doctor(config_path: Path) -> int:
               "fixed_seeds": ",".join(map(str, cfg["eval"]["fixed_seeds"])),
               "checkpoint": "/outside_repo/example_run/checkpoint.pt",
               "project_root": str(root), "autolab_root": str(ROOT),
-              "resume_checkpoint": ""}
+              "resume_checkpoint": "", "code_file": "/outside_repo/example_run/candidate.py"}
     sample.update({k: str(v) for k,v in cfg.get("project", {}).get("variables", {}).items()})
     print("Universal AutoLab preflight")
     print("Platform:", sys.platform, os.uname().machine if hasattr(os, "uname") else "unknown")
@@ -866,6 +949,9 @@ def cmd_doctor(config_path: Path) -> int:
     print("Claude CLI:", shutil.which("claude") or "not installed (manual/rules mode works)")
     print("Research Git revision:", git_revision(str(root)) or "not a Git worktree")
     print("Git modification guard:", bool(cfg.get("project", {}).get("git_guard", False)))
+    if cfg.get("code"):
+        code, context = load_code_setup(cfg, config_path, root)
+        print(f"Code search: on (initial {len(code)} chars passes static check, context {len(context)} chars)")
     print("Train command:", as_command(cfg["train"]["command"], sample))
     print("Eval command:", as_command(cfg["eval"]["command"], sample))
     print("Preflight OK; actual training/evaluation integrations are NOT tested by doctor")
